@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Background Remover via API</title>
+<style>
+:root{--bg:#000;--text:#fff;--blue:#2563eb;--muted:#9ca3af;}
+[data-theme="light"]{--bg:#fff;--text:#000;--blue:#2563eb;--muted:#52525b;}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text);}
+.page{display:none;min-height:100vh;padding:20px;}
+.page.active{display:block;}
+.center{max-width:980px;margin:auto;}
+.btn-wide{width:100%;padding:16px;border:none;border-radius:16px;background:var(--blue);color:#fff;font-weight:700;font-size:16px;cursor:pointer;margin-top:12px;}
+.btn-small{width:52px;height:52px;border-radius:14px;background:var(--blue);color:#fff;font-size:22px;border:none;cursor:pointer;}
+#dropZone{border:2px dashed var(--blue);border-radius:20px;padding:40px;text-align:center;font-weight:700;color:var(--muted);cursor:pointer;margin-top:20px;}
+#previewCanvas{width:100%;border-radius:16px;margin-top:20px;}
+#download{margin-top:12px;display:block;text-align:center;text-decoration:none;padding:12px;background:#22c55e;color:#fff;border-radius:12px;font-weight:700;}
+.footer{margin-top:60px;padding:30px 20px;border-top:1px solid rgba(255,255,255,.1);text-align:center;}
+.footer .links{display:flex;justify-content:center;gap:20px;margin-top:12px;}
+.footer a{text-decoration:none;color:var(--blue);font-weight:600;}
+.hidden{display:none;}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- PAGE 1 -->
+<div class="page active" id="page1">
+  <div class="center">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2>AI Background Remover</h2>
+      <button class="btn-small" id="themeBtn">🌓</button>
+    </div>
+    <p>Hapus background anime & manusia via API.</p>
+    <button class="btn-wide" id="goUpload">Unggah Gambar</button>
+    <div class="footer">
+      <p>Layanan Pelanggan</p>
+      <div class="links">
+        <a href="#">Instagram</a>
+        <a href="#">TikTok</a>
+        <a href="#">WhatsApp</a>
+      </div>
+      <small>© 2025 Falzz</small>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="page2">
+  <div class="center">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn-small" id="backBtn">←</button>
+      <button class="btn-small" id="themeBtn2">🌓</button>
+    </div>
+
+    <div id="dropZone">Jatuhkan atau pilih gambar</div>
+    <input type="file" id="fileInput" accept="image/*" class="hidden">
+    <canvas id="previewCanvas"></canvas>
+    <a id="download" href="#" download="hasil.png" class="hidden">Download PNG</a>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', function(){
+  const API_KEY="sk_bdf73d44f60d448eb7f27c3d1ecd358e"; // ganti dengan API key PixelCut atau Remove.bg
+
+  // ===== THEME =====
+  function toggleTheme(){
+    document.body.dataset.theme = document.body.dataset.theme==='light'?'dark':'light';
+  }
+  document.getElementById('themeBtn').onclick = toggleTheme;
+  document.getElementById('themeBtn2').onclick = toggleTheme;
+
+  // ===== PAGE NAV =====
+  const page1 = document.getElementById('page1');
+  const page2 = document.getElementById('page2');
+  document.getElementById('goUpload').onclick = ()=>{ page1.classList.remove('active'); page2.classList.add('active'); };
+  document.getElementById('backBtn').onclick = ()=>{ page2.classList.remove('active'); page1.classList.add('active'); };
+
+  // ===== FILE UPLOAD & REMOVE BACKGROUND VIA API =====
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewCanvas = document.getElementById('previewCanvas');
+  const download = document.getElementById('download');
+
+  dropZone.onclick = ()=>fileInput.click();
+  fileInput.onchange = handleFile;
+
+  async function handleFile(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    dropZone.textContent = "Memproses AI...";
+    const formData = new FormData();
+    formData.append('image_file', file);
+
+    try {
+      const res = await fetch("https://api.remove.bg/v1.0/removebg", {
+        method:"POST",
+        headers:{ "X-Api-Key": API_KEY },
+        body: formData
+      });
+      if(!res.ok) throw new Error("Gagal API");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = function(){
+        previewCanvas.width = img.width;
+        previewCanvas.height = img.height;
+        const ctx = previewCanvas.getContext('2d');
+        ctx.clearRect(0,0,img.width,img.height);
+        ctx.drawImage(img,0,0);
+        URL.revokeObjectURL(url);
+        download.href = previewCanvas.toDataURL("image/png");
+        download.classList.remove("hidden");
+        dropZone.textContent = "Jatuhkan atau pilih gambar";
+      };
+      img.src = url;
+    } catch(err){
+      console.error(err);
+      dropZone.textContent = "Gagal memproses AI";
+    }
+  }
+});
+</script>
+</body>
+</html>
