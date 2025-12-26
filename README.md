@@ -1,2 +1,0 @@
-# Falzz
-Website hapus background
